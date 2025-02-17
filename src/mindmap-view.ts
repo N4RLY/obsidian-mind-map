@@ -175,6 +175,13 @@ export default class MindmapView extends ItemView {
     }
     
     async renderMarkmap(root: INode, svg: SVGElement) {
+        // Add style to hide KaTeX HTML rendering
+        const style = document.createElement('style');
+        style.textContent = `
+            .katex-html { display: none; }
+        `;
+        this.containerEl.appendChild(style);
+
         const { font } = getComputedCss(this.containerEl);
         const options: IMarkmapOptions = {
             autoFit: false,
@@ -184,12 +191,12 @@ export default class MindmapView extends ItemView {
             spacingVertical: this.settings.spacingVertical ?? 5,
             spacingHorizontal: this.settings.spacingHorizontal ?? 80,
             paddingX: this.settings.paddingX ?? 8
-          };
-          try {
+        };
+        try {
             const markmapSVG = Markmap.create(svg, options, root);
-          } catch (error) {
-              console.error(error);
-          }
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     displayEmpty(display: boolean) {
