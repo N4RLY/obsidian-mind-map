@@ -169,8 +169,36 @@ export default class MindmapView extends ItemView {
     }
     
     async transformMarkdown() {
-        const { root, features } = transform(this.currentMd);
-        this.obsMarkmap.updateInternalLinks(root);
+        // First process internal links
+        const processedMd = this.currentMd.replace(/\[\[([^\]]+)\]\]/g, (match, content) => {
+            // Handle aliases in wiki links
+            const [path, alias] = content.split('|');
+            const displayText = alias || path;
+            // Create a proper markdown link
+            return `[${displayText}](${encodeURI(path)})`;
+        });
+
+        // Then transform the markdown
+        const { root, features } = transform(processedMd);
+        
+        // Update internal links to use obsidian:// protocol
+        const processNode = (node: INode) => {
+            if (node.v && typeof node.v === 'string') {
+                // Find markdown links and convert them to obsidian:// links
+                node.v = node.v.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, path) => {
+                    if (path.startsWith('http')) {
+                        return match; // Keep external links as is
+                    }
+                    const url = `obsidian://open?vault=${this.vault.getName()}&file=${encodeURI(path)}`;
+                    return `<a href="${url}">${text}</a>`;
+                });
+            }
+            if (node.c) {
+                node.c.forEach(processNode);
+            }
+        };
+        
+        processNode(root);
         return { root, features };
     }
     
